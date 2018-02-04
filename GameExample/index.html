@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>GameExample JavaScript Demo</title>
+
+<style>
+
+.info{
+  position:absolute;
+  border:1px solid black;
+  width:1in;
+  height:1in;
+  background-color:#f0e8d0;
+  display:inline-block;
+  vertical-align:center;
+  text-align:center;
+}
+
+
+.boot{
+  position:absolute;
+  border:1px solid black;
+  width:1in;
+  height:1in;
+  background-color:#f0e8d0;
+  display:inline-block;
+  vertical-align:center;
+  text-align:center;
+}
+
+.gamepad_console{
+  position:absolute;
+  border:1px solid black;
+padding:1em;
+  background-color:#f0e8d0;
+  display:inline-block;
+  vertical-align:center;
+  text-align:left;
+}
+
+.reader_console{
+  position:absolute;
+  border:1px solid black;
+padding:1em;
+  background-color:#f0e8d0;
+  display:inline-block;
+  vertical-align:center;
+  text-align:right;
+}
+
+.canvas_div{
+  position:absolute;
+  border:1px solid black;
+padding:1em;
+  background-color:#f0e8d0;
+  display:inline-block;
+  vertical-align:center;
+  text-align:right;
+}
+
+
+.jspcb_div{
+  position:absolute;
+  border:1px solid black;
+padding:1em;
+  background-color:#f0e8d0;
+  display:inline-block;
+  vertical-align:center;
+  text-align:right;
+}
+
+
+</style>
+
+<script src="glmatrix.js"></script>
+
+<script id="shader-fs" type="x-shader/x-fragment">
+    precision mediump float;
+
+    void main(void) {
+        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+    }
+</script>
+
+<script id="shader-vs" type="x-shader/x-vertex">
+    attribute vec3 aVertexPosition;
+
+    uniform mat4 uMVMatrix;
+    uniform mat4 uPMatrix;
+
+    void main(void) {
+        gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+    }
+</script>
+
+
+<script>
+
+
+// GL Viewports
+
+var gl;
+
+function startViewport(){
+  var canvas = document.getElementById("glcanvas");
+  gl = initWebGL(canvas);
+  gl.viewportWidth = canvas.width;
+  gl.viewportHeight = canvas.height;
+  
+  initShaders();
+  initBuffers();
+  
+  if (!gl){
+    return;
+  }
+gl.clearColor(0.0, 0.0, 0.0, 1.0);
+gl.enable(gl.DEPTH_TEST);
+gl.depthFunc(gl.LEQUAL);
+gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+drawScene();
+
+}
+
+
+function initWebGL(canvas){
+  gl = null;
+  gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+  if (!gl){
+    alert("Unable to initialize WebGL. Your browser may not support it.");
+  }
+
+  return gl;
+}
+
+
+
+  var triangleVertexPositionBuffer;
+  var squareVertexPositionBuffer;
+
+
+    function getShader(gl, id) {
+        var shaderScript = document.getElementById(id);
+        if (!shaderScript) {
+            return null;
+        }
+
+        var str = "";
+        var k = shaderScript.firstChild;
+        while (k) {
+            if (k.nodeType == 3) {
+                str += k.textContent;
+            }
+            k = k.nextSibling;
+        }
+
+        var shader;
+        if (shaderScript.type == "x-shader/x-fragment") {
+            shader = gl.createShader(gl.FRAGMENT_SHADER);
+        } else if (shaderScript.type == "x-shader/x-vertex") {
+            shader = gl.createShader(gl.VERTEX_SHADER);
+        } else {
+            return null;
+        }
+
+        gl.shaderSource(shader, str);
+        gl.compileShader(shader);
+
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+            alert(gl.getShaderInfoLog(shader));
+            return null;
+        }
+
+        return shader;
+    }
+
+
+    var shaderProgram;
+
+    function initShaders() {
+        var fragmentShader = getShader(gl, "shader-fs");
+        var vertexShader = getShader(gl, "shader-vs");
+
+        shaderProgram = gl.createProgram();
+        gl.attachShader(shaderProgram, vertexShader);
+        gl.attachShader(shaderProgram, fragmentShader);
+        gl.linkProgram(shaderProgram);
+
+        if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+            alert("Could not initialise shaders");
+        }
+
+        gl.useProgram(shaderProgram);
+
+        shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
+        gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
+
+        shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
+        shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
+    }
+
+
+    var mvMatrix = mat4.create();
+    var pMatrix = mat4.create();
+
+    function setMatrixUniforms() {
+        gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
+        gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix);
+    }
+
+
+
+
+function initBuffers(){
+
+  triangleVertexPositionBuffer = gl.createBuffer();
+
+  gl.bindBuffer(gl.ARRAY_BUFFER,triangleVertexPositionBuffer);
+
+  var vertices = [
+    0.0, 1.0, 0.0,
+    -1.0,-1.0,0.0,
+    1.0,-1.0,0.0
+  ];
+  
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+  
+  triangleVertexPositionBuffer.itemSize = 3;
+  triangleVertexPositionBuffer.numItems = 3;
+  
+  
+  squareVertexPositionBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER,squareVertexPositionBuffer);
+
+  var vertices = [
+    1.0,1.0,0.0,
+    -1.0,1.0,0.0,
+    1.0,-1.0,0.0,
+    -1.0,-1.0,0.0
+  ];
+  
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+  
+  squareVertexPositionBuffer.itemSize = 3;
+  squareVertexPositionBuffer.numItems = 4;
+  
+}
+
+
+function drawScene(){
+  gl.viewport(0,0,gl.viewportWidth,gl.viewportHeight);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0, pMatrix);
+
+  mat4.identity(mvMatrix);
+
+  mat4.translate(mvMatrix, [-1.5,0.0,-7.0]);
+  gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPositionBuffer);
+  gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, triangleVertexPositionBuffer.itemSize, gl.FLOAT, false, 0,0);
+  setMatrixUniforms();
+  gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPositionBuffer.numItems);
+
+  mat4.translate(mvMatrix,[3.0,0.0,0.0]);
+  gl.bindBuffer(gl.ARRAY_BUFFER, squareVertexPositionBuffer);
+  gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, squareVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+  setMatrixUniforms();
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, squareVertexPositionBuffer.numItems);
+}
+
+
+
+
+
+
+// Mouse/Touch Interaction
+
+nodes=new Array();
+
+grabbed=new Object();
+grabbed.nodes=new Array();
+grabbed.empty=new Array();
+grabbed.emptylock=false;
+twarn=false;
+
+var CurX=0
+var CurY=0;
+
+function leave(e){
+  if (!e) var e = window.event;
+  var tg = (window.event) ? e.srcElement : e.target;
+  if (tg.nodeName != 'DIV') return;
+  var reltg = (e.relatedTarget) ? e.relatedTarget : e.toElement;
+  while (reltg != tg && reltg.nodeName != 'HTML')
+    reltg= reltg.parentNode
+    if (reltg== tg) return;    
+  // Handle event
+  e.preventDefault();
+}
+
+function hover(e){
+  if (!e) var e = window.event;
+  var relTarg = e.relatedTarget || e.fromElement;
+}
+
+function grab(e){
+  var l=0;
+  if (!e) var e = window.event;
+  var tg = (window.event) ? e.srcElement : e.target;
+
+  if (e.touches && !twarn){alert("touches enabled");twarn=true;}
+
+  if (l=grabbed.empty.length){
+    while (grabbed.emptylock){
+      // wait for unlock
+    }  
+    grabbed.emptylock=true;
+    grab_id=grabbed.empty[grabbed.empty.length-1]
+    grabbed.empty.pop();
+    grabbed.emptylock=false;
+  }else{
+    grab_id=grabbed.nodes.length
+  }
+  grabbed.nodes[grab_id]=new Object();
+  grabbed.nodes[grab_id].empty=false;
+  grabbed.nodes[grab_id].Touch=(!e.touches)?(!e.touch?0:e.touch):e.touches[0];
+
+  if (e.touches){
+    grabbed.nodes[grab_id].Touch=e.touches;
+    tgob=document.getElementById(tg.id);
+    grabbed.nodes[grab_id].LayX=e.touches[0].pageX-tgob.offsetLeft;
+    grabbed.nodes[grab_id].LayY=e.touches[0].pageY-tgob.offsetTop;
+  }else{
+    grabbed.nodes[grab_id].LayX=e.layerX
+    grabbed.nodes[grab_id].LayY=e.layerY
+  }
+
+  if (e.touches){
+    CurX=e.touches[0].pageX;  
+    CurY=e.touches[0].pageY;
+  }else{
+    if (e.pageX || e.pageY) {
+      CurX=e.pageX;
+      CurY=e.pageY;
+    }
+    else if (e.clientX || e.clientY) {
+      CurX=grabbed.nodes[grab_id].PosX=e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft-e.layerX;
+
+      CurY=grabbed.nodes[grab_id].PosY=e.clientY + document.body.scrollTop + document.documentElement.scrollTop;-e.layerY;
+    }
+  }
+  
+  grabbed.nodes[grab_id].PosX=CurX-e.layerX;
+  grabbed.nodes[grab_id].PosY=CurY-e.layerY;
+  
+  grabbed.nodes[grab_id].ElementId=tg.id;
+  document.onmousemove=update_coordinates;
+  setTimeout("move_grabbed()",33);
+  e.preventDefault();
+}
+
+function update_coordinates(e){
+  if (!e) var e=window.event;
+    if (e.touches){
+      CurX=e.touches[0].pageX;
+      CurY=e.touches[0].pageY;
+      document.getElementById('reader').value=e.touches.length+" - "+CurX+","+CurY;
+    }else{
+      if (e.pageX || e.pageY) {
+      CurX=e.pageX;
+      CurY=e.pageY;
+    }
+    else if (e.clientX || e.clientY) {
+      CurX=e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
+      CurY=e.clientY + document.body.scrollTop + document.documentElement.scrollTop;
+    }
+  }
+  e.preventDefault();
+}
+
+
+function move_grabbed(){
+  var l=0;
+  var nodeElement;
+  if (l=grabbed.nodes.length){
+    for (i=0;i<l;i++){
+      if (!grabbed.nodes[i].empty){
+        nodeElement=document.getElementById(grabbed.nodes[i].ElementId);
+        grabbed.nodes[i].PosX=CurX-grabbed.nodes[i].LayX;
+        nodeElement.style.left=grabbed.nodes[i].PosX+"px";
+
+        grabbed.nodes[i].PosY=CurY-grabbed.nodes[i].LayY;
+        nodeElement.style.top=grabbed.nodes[i].PosY+"px";
+
+      }
+    }
+    setTimeout("move_grabbed()",33);
+  }
+  //e.preventDefault();
+  return false;
+}
+
+function donothing(e){
+return false;
+}
+
+function release(e){
+  document.mousemove=donothing;
+
+  if (!e) var e = window.event;
+  for (i=0;i<grabbed.nodes.length;i++){
+    grabbed.nodes[i].empty=true;
+    grabbed.nodes[i].PosX=0;
+    grabbed.nodes[i].PosY=0;
+    grabbed.nodes[i].LayX=0;
+    grabbed.nodes[i].LayY=0;
+    grabbed.empty[grabbed.empty.length]=i;
+  }
+  e.preventDefault();
+}
+
+// window.onload=startViewport;
+
+</script>
+
+
+
+<script>
+
+// Gamepad 
+
+/*
+window.addEventListener("gamepadconnected", function(e){
+
+	console.log("Gamepad connected at index %d: %s . %d buttons, %d axes.",
+	e.gamepad.indeex, e.gamepad.id, 
+	e.gamepad.buttons.length, e.gamepad.axes.length);
+});
+
+window.addEventListener("gamepaddisconnected", function(e){
+	console.log("Gamepad disconnected from index %d: %s",
+	e.gamepad.index, e.gamepad.id);
+});
+*/
+
+var gamepads = new Array();
+
+function gamepadHandler(event,connecting) {
+	var pad = event.gamepad;
+
+	if (connecting){
+		gamepads[pad.index] = pad;
+	}else{
+		delete gamepads[pad.index];
+	}
+
+	listGamepads();
+}
+
+
+window.addEventListener("gamepadconnected", function(e) { gamepadHandler(e,true); }, false);
+window.addEventListener("gamepaddisconnected", function(e) { gamepadHandler(e,false); }, false);
+
+function isGamepads(){
+//	return navigator.getGamepads();
+	// || navigator.getGamepads() || navigator.webkitGetGamepads || navigator.webkitGetGamepads();
+}
+
+function listGamepads(){
+	var foundpads=false;
+	pads=navigator.getGamepads()
+	
+	for (i=0;i<pads.length;i++){
+		if (pad=pads[i]){
+			gamepads[i]=pad;
+			foundpads=true;
+			gamepad_console.innerHTML="Gamepad "+i+" has "+pads[i].buttons.length+" Buttons, "+pads[i].axes.length+" Axes and id of "+pads[i].id;
+		}
+	}
+	if (!foundpads){
+		gamepad_console.innerHTML="No gamepads yet activated. Use gamepad to activate.";
+	}
+}
+
+tick=0;
+
+function gamepadConsoleUpdate(){
+	pads=navigator.getGamepads();
+	content="Tick: "+tick+"<br>Gamepads: "+gamepads.length+"<br>Buttons:";
+	for (g=0;g<gamepads.length;g++){
+		for (b=0;b<gamepads[g].buttons.length;b++){
+
+			if (pads[gamepads[g].index].buttons[b].pressed == true || pads[gamepads[g].index].buttons[b].value > 0){
+				content+="<br>Gamepad: "+g+", Button: "+b;
+			}
+
+		}
+	}
+
+	content+="<br>Axes: ";
+	for (g=0;g<gamepads.length;g++){
+		for (a=0;a<gamepads[g].axes.length;a++){
+
+			if (pads[gamepads[g].index].axes[a] != 0){
+				content+="<br>Gamepad: "+g+", Axis: "+a+"is value("+pads[gamepads[g].index].axes[a]+")";
+			}
+
+		}
+	}
+
+
+	gamepad_console.innerHTML=content;
+tick++;
+
+}
+
+function renderLoop(){
+	gamepadConsoleUpdate();
+	setTimeout("renderLoop()",66);
+}
+
+function initGame(){
+	startViewport();
+	listGamepads();
+	renderLoop();
+	gamepad_console.innerHTML="content";
+}
+
+window.onload=initGame;
+
+</script>
+
+<body>
+
+
+
+
+
+<div id="canvas_div" class="canvas_div" onmousein="javascript: hover(event)" onmouseout="javascript: leave(event)" onmousedown="javascript: grab(event);" onmouseup="javascript: release();">
+
+<canvas id="glcanvas" width="640" height="480" style="border:1px solid black;">
+You browser doesn't appears to support the canvas element.
+</canvas>
+
+</div>
+
+<script>
+document.getElementById("canvas_div").addEventListener('touchstart', function(event) {
+    grab(event);
+}, false);
+
+document.getElementById("canvas_div").addEventListener('touchmove', function(event) {
+    update_coordinates(event);
+}, false);
+
+document.getElementById("canvas_div").addEventListener('touchend', function(event) {
+    release(event);
+}, false);
+</script>
+
+
+
+
+<div id="gamepad_console" class="gamepad_console" onmousein="javascript: hover(event)" onmouseout="javascript: leave(event)" onmousedown="javascript: grab(event);" onmouseup="javascript: release();">Gamepad Console</div>
+
+<script>
+document.getElementById("gamepad_console").addEventListener('touchstart', function(event) {
+    grab(event);
+}, false);
+
+document.getElementById("gamepad_console").addEventListener('touchmove', function(event) {
+    update_coordinates(event);
+}, false);
+
+document.getElementById("gamepad_console").addEventListener('touchend', function(event) {
+    release(event);
+}, false);
+</script>
+
+
+
+
+<form>
+<div id="reader_console" class="reader_console" onmousein="javascript: hover(event)" onmouseout="javascript: leave(event)" onmousedown="javascript: grab(event);" onmouseup="javascript: release();">
+<textarea rows=15 cols=70 id=reader></textarea></div></form>
+
+<script>
+document.getElementById("reader_console").addEventListener('touchstart', function(event) {
+    grab(event);
+}, false);
+
+document.getElementById("reader_console").addEventListener('touchmove', function(event) {
+    update_coordinates(event);
+}, false);
+
+document.getElementById("reader_console").addEventListener('touchend', function(event) {
+    release(event);
+}, false);
+</script>
+
+
+
+
+
+<div id="info" class="info" onmousein="javascript: hover(event)" onmouseout="javascript: leave(event)" onmousedown="javascript: grab(event);" onmouseup="javascript: release();">info</div>
+
+<script>
+document.getElementById("info").addEventListener('touchstart', function(event) {
+    grab(event);
+}, false);
+
+document.getElementById("info").addEventListener('touchmove', function(event) {
+    update_coordinates(event);
+}, false);
+
+document.getElementById("info").addEventListener('touchend', function(event) {
+    release(event);
+}, false);
+</script>
+
+
+
+
+<div id="boot" class="boot" onmousein="javascript: hover(event)" onmouseout="javascript: leave(event)" onmousedown="javascript: grab(event);" onmouseup="javascript: release();">boot</div>
+
+<script>
+document.getElementById("boot").addEventListener('touchstart', function(event) {
+    grab(event);
+}, false);
+
+document.getElementById("boot").addEventListener('touchmove', function(event) {
+    update_coordinates(event);
+}, false);
+
+document.getElementById("boot").addEventListener('touchend', function(event) {
+    release(event);
+}, false);
+</script>
+
+
+
+
+
+<div id="jspcb_div" class="jspcb_div" onmousein="javascript: hover(event)" onmouseout="javascript: leave(event)" onmousedown="javascript: grab(event);" onmouseup="javascript: release();">
+
+<script src="canvas.js"></script>JSPCB Control</div>
+
+<script>
+document.getElementById("jspcb_div").addEventListener('touchstart', function(event) {
+    grab(event);
+}, false);
+
+document.getElementById("jspcb_div").addEventListener('touchmove', function(event) {
+    update_coordinates(event);
+}, false);
+
+document.getElementById("jspcb_div").addEventListener('touchend', function(event) {
+    release(event);
+}, false);
+</script>
+
+</body>
+</html>
+
