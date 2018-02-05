@@ -6,6 +6,10 @@
 
 <style>
 
+body{
+margin:0px;
+}
+
 .info{
   position:absolute;
   border:1px solid black;
@@ -99,6 +103,11 @@ padding:1em;
 
 
 // GL Viewports
+
+var rotation=0;
+var thrust=0;
+var fire=false;
+
 
 var gl;
 
@@ -253,8 +262,10 @@ function drawScene(){
   mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0, pMatrix);
 
   mat4.identity(mvMatrix);
-
   mat4.translate(mvMatrix, [-1.5,0.0,-7.0]);
+  mat4.rotate(mvMatrix,rotation/360*Math.atan(1)*4,[0,0,-1]);
+
+
   gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPositionBuffer);
   gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, triangleVertexPositionBuffer.itemSize, gl.FLOAT, false, 0,0);
   setMatrixUniforms();
@@ -265,6 +276,8 @@ function drawScene(){
   gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, squareVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
   setMatrixUniforms();
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, squareVertexPositionBuffer.numItems);
+
+setTimeout("drawScene()",10);
 }
 
 
@@ -442,6 +455,12 @@ window.addEventListener("gamepaddisconnected", function(e){
 });
 */
 
+MAPPED_A=1;
+MAPPED_B=2;
+MAPPED_X=0;
+MAPPED_Y=3;
+
+
 var gamepads = new Array();
 
 function gamepadHandler(event,connecting) {
@@ -483,6 +502,30 @@ function listGamepads(){
 
 tick=0;
 
+function gameTick(){
+	pads=navigator.getGamepads();
+	for (g=0;g<gamepads.length;g++){
+		if (pads[gamepads[g].index].buttons[MAPPED_A].pressed == true || pads[gamepads[g].index].buttons[MAPPED_A].value > 0){
+			rotation-=15;
+		}
+if (pads[gamepads[g].index].buttons[MAPPED_B].pressed == true || pads[gamepads[g].index].buttons[MAPPED_B].value > 0){
+			rotation+=15;
+		}
+
+
+if (pads[gamepads[g].index].buttons[MAPPED_Y].pressed == true || pads[gamepads[g].index].buttons[MAPPED_Y].value > 0){
+			fire=true;
+		}
+
+
+if (pads[gamepads[g].index].buttons[MAPPED_X].pressed == true || pads[gamepads[g].index].buttons[MAPPED_X].value > 0){
+			thrust+=5;
+		}
+
+
+	}
+}
+
 function gamepadConsoleUpdate(){
 	pads=navigator.getGamepads();
 	content="Tick: "+tick+"<br>Gamepads: "+gamepads.length+"<br>Buttons:";
@@ -501,7 +544,7 @@ function gamepadConsoleUpdate(){
 		for (a=0;a<gamepads[g].axes.length;a++){
 
 			if (pads[gamepads[g].index].axes[a] != 0){
-				content+="<br>Gamepad: "+g+", Axis: "+a+"is value("+pads[gamepads[g].index].axes[a]+")";
+				content+="<br>Gamepad: "+g+", Axis: "+a+" is value("+pads[gamepads[g].index].axes[a]+")";
 			}
 
 		}
@@ -511,17 +554,24 @@ function gamepadConsoleUpdate(){
 	gamepad_console.innerHTML=content;
 tick++;
 
+
+}
+
+function inputLoop(){
+	gamepadConsoleUpdate();
+	//setTimeout("inputLoop()",1);
 }
 
 function renderLoop(){
-	gamepadConsoleUpdate();
-	setTimeout("renderLoop()",66);
+	gameTick();
+	//setTimeout("renderLoop()",33);
 }
 
 function initGame(){
 	startViewport();
 	listGamepads();
-	renderLoop();
+	setInterval("inputLoop()",1);
+	setInterval("renderLoop()",66);
 	gamepad_console.innerHTML="content";
 }
 
