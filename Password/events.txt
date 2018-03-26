@@ -1,0 +1,31 @@
+active_events=new Array();
+kblock=false;
+
+function waitfor(n){
+active_events[0]=n;
+}
+
+function handler(){
+for (e=0;e<active_events.length;e++){
+eval(active_events[e]);
+}
+return true;
+}
+
+function hmm(){
+return true;
+}
+
+
+function hkbp(){
+window.status="keyboard";
+handler();
+if (kblock){
+return false;
+}else{
+return true;
+}
+}
+
+document.onmousemove=hmm;
+document.onkeydown=hkbp;

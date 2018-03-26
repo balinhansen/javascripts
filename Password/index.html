@@ -1,0 +1,74 @@
+
+<script src="password.txt"></script>
+<script src="events.txt"></script>
+
+<script>
+leng=0;
+count=0;
+password_out=""
+set="";
+
+function event_handler_a(){
+count++
+
+password_out=password_out+password(1,set);
+window.status=count+" of "+leng;
+document.getElementById("txt").value=password_out;
+if (password_out.length>=leng){
+active_events[0]="void(null)";
+kblock=false;
+}
+}
+
+function ptr_init(leng){
+kblock=true;
+password_out=""
+count=0;
+document.getElementById("txt").value=""
+document.body.focus();
+waitfor("event_handler_a()");
+}
+
+
+function produce(){
+char=document.getElementById("chr").selectedIndex;
+if (char=='0'){
+set=an;
+}
+
+if (char=='1'){
+set=hex;
+}
+
+if (char=='2'){
+set=kbd;
+}
+
+if (char=='3'){
+set=bin;
+}
+
+
+leng=document.getElementById("len").value;
+leng=parseInt(leng.substring(0,4));
+
+if (document.getElementById("mod").selectedIndex==0){
+document.getElementById("txt").value=password(leng,set);
+}else{
+ptr_init(leng);
+}
+}
+</script>
+
+
+
+<body>
+<form onSubmit="produce();return false;">
+Password Length (in characters): <input id=len size=8 maxlength=4>
+<select id=mod><option>Instantly<option selected>Typed</select>
+<br>Charset
+<select id=chr><option>Alphanumeric<option>Hex<option>keyboard<option>Binary</select>
+<input type="button" value="Create" onClick="produce();">
+<br><textarea id=txt cols=69 rows=5></textarea>
+</body>
+</html>
