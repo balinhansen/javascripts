@@ -1,7 +1,4 @@
-
 <script>
-
-
 /*
 window.addEventListener("gamepadconnected", function(e){
 
@@ -47,63 +44,15 @@ function listGamepads(){
 		if (pad=pads[i]){
 			gamepads[i]=pad;
 			foundpads=true;
-			gamepad_console.innerHTML="Gamepad "+i+" has "+pads[i].buttons.length+" Buttons, "+pads[i].axes.length+" Axes and id of "+pads[i].id;
+			alert("Gamepad "+i+" has "+pads[i].buttons.length+" Buttons, "+pads[i].axes.length+" Axes and id of "+pads[i].id);
 		}
 	}
 	if (!foundpads){
-		gamepad_console.innerHTML="No gamepads yet activated. Use gamepad to activate.";
+		alert("No gamepads yet activated. Use gamepad to activate.");
 	}
 }
 
-tick=0;
+window.onload=listGamepads;
 
-function gamepadConsoleUpdate(){
-	pads=navigator.getGamepads();
-	content="Tick: "+tick+"<br>Gamepads: "+gamepads.length+"<br>Buttons:";
-	for (g=0;g<gamepads.length;g++){
-		for (b=0;b<gamepads[g].buttons.length;b++){
-
-			if (pads[gamepads[g].index].buttons[b].pressed == true || pads[gamepads[g].index].buttons[b].value > 0){
-				content+="<br>Gamepad: "+g+", Button: "+b;
-			}
-
-		}
-	}
-
-	content+="<br>Axes: ";
-	for (g=0;g<gamepads.length;g++){
-		for (a=0;a<gamepads[g].axes.length;a++){
-
-			if (pads[gamepads[g].index].axes[a] != 0){
-				content+="<br>Gamepad: "+g+", Axis: "+a+"is value("+pads[gamepads[g].index].axes[a]+")";
-			}
-
-		}
-	}
-
-
-	gamepad_console.innerHTML=content;
-tick++;
-
-}
-
-function renderLoop(){
-	gamepadConsoleUpdate();
-	setTimeout("renderLoop()",66);
-}
-
-function initGame(){
-	listGamepads();
-	renderLoop();
-	gamepad_console.innerHTML="content";
-}
-
-window.onload=initGame;
 
 </script>
-
-
-<body>
-<div id="gamepad_console"></div>
-
-</body>
