@@ -48,6 +48,10 @@ if (char=='3'){
 set=bin;
 }
 
+if (char=='4'){
+set=dec;
+}
+
 
 leng=document.getElementById("len").value;
 leng=parseInt(leng.substring(0,4));
@@ -67,7 +71,7 @@ ptr_init(leng);
 Password Length (in characters): <input id=len size=8 maxlength=4>
 <select id=mod><option>Instantly<option selected>Typed</select>
 <br>Charset
-<select id=chr><option>Alphanumeric<option>Hex<option>keyboard<option>Binary</select>
+<select id=chr><option>Alphanumeric<option>Hex<option>keyboard<option>Binary<option>Decimal</select>
 <input type="button" value="Create" onClick="produce();">
 <br><textarea id=txt cols=69 rows=5></textarea>
 </body>
