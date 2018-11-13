@@ -490,9 +490,10 @@ function listGamepads(){
 	
 	for (i=0;i<pads.length;i++){
 		if (pad=pads[i]){
+			haptics=pad.hapticActuators;
 			gamepads[i]=pad;
 			foundpads=true;
-			gamepad_console.innerHTML="Gamepad "+i+" has "+pads[i].buttons.length+" Buttons, "+pads[i].axes.length+" Axes and id of "+pads[i].id;
+			gamepad_console.innerHTML="Gamepad "+i+" has "+pads[i].buttons.length+" Buttons, "+pads[i].axes.length+" Axes, "+haptics.length+" haptic devices and id of "+pads[i].id;
 		}
 	}
 	if (!foundpads){
@@ -550,7 +551,11 @@ function gamepadConsoleUpdate(){
 		}
 	}
 
-
+	content+="<br>Haptics: ";
+	for (g=0;g<gamepads.length;g++){
+		haptics=gamepads[g].hapticActuators;
+		content+="<br>Gamepad: "+g+", "+haptics.length+" available haptics."
+	}
 	gamepad_console.innerHTML=content;
 tick++;
 
